@@ -1,68 +1,204 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-    <title>Equinox TMA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+      :root {
+        /* Переопределяем на случай, если Telegram не передаст переменные */
+        --tg-theme-bg-color: transparent;
+        --tg-theme-text-color: #ffffff;
+        --tg-theme-button-color: #2481cc;
+        --tg-theme-button-text-color: #ffffff;
+      }
+
       body {
-        font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-        background-color: var(--tg-theme-bg-color, #fff);
-        color: var(--tg-theme-text-color, #000);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        /* ГРАДИЕНТНЫЙ ФОН (Вариант 3) */
+        background: linear-gradient(135deg, #1e1b4b 0%, #7851a9 100%);
+        color: var(--tg-theme-text-color, #ffffff);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        /* Защита от наезда контента под статус-бар и кнопку "Назад" */
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+        box-sizing: border-box;
+      }
+
+      .header {
         padding: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(0, 0, 0, 0.3); /* Легкая подложка для читаемости заголовка */
+        backdrop-filter: blur(10px);
+      }
+
+      .header h1 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: 0.5px;
+      }
+
+      .tabs {
+        padding: 8px;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+      }
+
+      .tabs::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+      }
+
+      .tab-btn {
+        padding: 8px 16px;
+        border-radius: 12px;
+        border: none;
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+      }
+
+      .tab-btn.active {
+        background: rgba(255, 255, 255, 0.2);
+        color: var(--tg-theme-button-text-color, #ffffff);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .tab-btn:active {
+        transform: scale(0.95);
+      }
+
+      .content {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.1); /* Полупрозрачный поверх градиента */
+        backdrop-filter: blur(12px); /* Эффект матового стекла */
+        padding: 16px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .card h2 {
+        font-size: 16px;
+        margin: 0 0 12px 0;
+        color: var(--tg-theme-button-color, #2481cc);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .card p {
+        font-size: 14px;
+        line-height: 1.5;
+        color: rgba(255, 255, 255, 0.9);
         margin: 0;
       }
-      h1 { margin-top: 0; }
-      textarea {
-        width: 100%;
-        min-height: 120px;
+
+      .status {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.5);
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .footer {
         padding: 12px;
-        border-radius: 12px;
-        border: 1px solid var(--tg-theme-hint-color, #ccc);
-        resize: vertical;
-        box-sizing: border-box;
-        font-size: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: center;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.4);
+        background: rgba(0, 0, 0, 0.3);
       }
-      button {
-        width: 100%;
-        padding: 14px;
-        margin-top: 12px;
-        border: none;
-        border-radius: 12px;
-        background-color: var(--tg-theme-button-color, #2481cc);
-        color: var(--tg-theme-button-text-color, #fff);
-        font-size: 16px;
-        font-weight: 600;
+
+      /* Классы для переключения вкладок */
+      .hidden-section {
+        display: none;
       }
-      .status { margin-top: 12px; font-size: 14px; color: var(--tg-theme-hint-color, #888); }
+
+      .active-section {
+        display: block;
+      }
     </style>
   </head>
   <body>
-    <h1>Equinox: финансы и МСФО</h1>
-    <p>Задай вопрос по учёту, отчётности или МФУ — я помогу.</p>
-    <textarea id="question" placeholder="Например: «Как учесть резерв по IAS 37?»"></textarea>
-    <button id="send">Отправить в бота</button>
-    <div id="status" class="status"></div>
+    <div class="header">
+      <h1>Equinox</h1>
+      <span style="font-size:12px; color:rgba(255,255,255,0.5);">v1.0</span>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('weather')">🌤 Погода</button>
+      <button class="tab-btn" onclick="switchTab('calendar')">📅 Календарь</button>
+      <button class="tab-btn" onclick="switchTab('mail')">✉️ Почта</button>
+    </div>
+
+    <div class="content">
+      <div id="weather" class="active-section">
+        <div class="card">
+          <h2>Погода</h2>
+          <p>Здесь будет прогноз погоды. Градиентный фон подчеркивает технологичность сервиса.</p>
+          <p class="status">Статус: ожидает запроса к API</p>
+        </div>
+      </div>
+
+      <div id="calendar" class="hidden-section">
+        <div class="card">
+          <h2>Календарь</h2>
+          <p>Здесь будет список ближайших событий. Полупрозрачные карточки не перекрывают красоту фона.</p>
+          <p class="status">Статус: ожидает авторизации</p>
+        </div>
+      </div>
+
+      <div id="mail" class="hidden-section">
+        <div class="card">
+          <h2>Почта</h2>
+          <p>Здесь будет сводка непрочитанных писем. Эффект размытия (backdrop-filter) делает интерфейс воздушным.</p>
+          <p class="status">Статус: ожидает подключения</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Данные загружаются из внешних API. Требуется авторизация.
+    </div>
 
     <script>
       const tg = window.Telegram.WebApp;
       tg.ready();
-      tg.expand();
 
-      const btn = document.getElementById('send');
-      const textarea = document.getElementById('question');
-      const status = document.getElementById('status');
+      function switchTab(tabName) {
+        // Обновляем кнопки
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
 
-      btn.onclick = () => {
-        const q = textarea.value.trim();
-        if (!q) {
-          status.textContent = 'Введи вопрос, пожалуйста.';
-          return;
-        }
-        status.textContent = 'Отправляю...';
-        tg.sendData(q);
-      };
+        // Переключаем секции
+        document.querySelectorAll('.active-section, .hidden-section').forEach(el => {
+          el.classList.remove('active-section');
+          el.classList.add('hidden-section');
+        });
+
+        document.getElementById(tabName).classList.remove('hidden-section');
+        document.getElementById(tabName).classList.add('active-section');
+      }
     </script>
   </body>
 </html>
