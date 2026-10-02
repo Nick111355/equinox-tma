@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
       :root {
-        /* Переопределяем на случай, если Telegram не передаст переменные */
         --tg-theme-bg-color: transparent;
         --tg-theme-text-color: #ffffff;
         --tg-theme-button-color: #2481cc;
@@ -14,7 +13,7 @@
 
       body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        /* ГРАДИЕНТНЫЙ ФОН (Вариант 3) */
+        /* ГРАДИЕНТНЫЙ ФОН */
         background: linear-gradient(135deg, #1e1b4b 0%, #7851a9 100%);
         color: var(--tg-theme-text-color, #ffffff);
         margin: 0;
@@ -22,7 +21,7 @@
         min-height: 100vh;
         display: flex;
         flex-direction: column;
-        /* Защита от наезда контента под статус-бар и кнопку "Назад" */
+        /* Защита от наезда под статус-бар */
         padding-top: env(safe-area-inset-top);
         padding-bottom: env(safe-area-inset-bottom);
         box-sizing: border-box;
@@ -34,7 +33,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: rgba(0, 0, 0, 0.3); /* Легкая подложка для читаемости заголовка */
+        background: rgba(0, 0, 0, 0.3);
         backdrop-filter: blur(10px);
       }
 
@@ -51,11 +50,11 @@
         gap: 8px;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        scrollbar-width: none; /* Firefox */
+        scrollbar-width: none;
       }
 
       .tabs::-webkit-scrollbar {
-        display: none; /* Chrome/Safari */
+        display: none;
       }
 
       .tab-btn {
@@ -88,8 +87,8 @@
       }
 
       .card {
-        background: rgba(255, 255, 255, 0.1); /* Полупрозрачный поверх градиента */
-        backdrop-filter: blur(12px); /* Эффект матового стекла */
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(12px);
         padding: 16px;
         border-radius: 16px;
         margin-bottom: 16px;
@@ -129,7 +128,6 @@
         background: rgba(0, 0, 0, 0.3);
       }
 
-      /* Классы для переключения вкладок */
       .hidden-section {
         display: none;
       }
@@ -152,27 +150,30 @@
     </div>
 
     <div class="content">
+      <!-- Вкладка ПОГОДА -->
       <div id="weather" class="active-section">
         <div class="card">
           <h2>Погода</h2>
-          <p>Здесь будет прогноз погоды. Градиентный фон подчеркивает технологичность сервиса.</p>
-          <p class="status">Статус: ожидает запроса к API</p>
+          <p id="weather-content">Загрузка данных...</p>
+          <p class="status" id="weather-status">Статус: ожидает запроса к API</p>
         </div>
       </div>
 
+      <!-- Вкладка КАЛЕНДАРЬ -->
       <div id="calendar" class="hidden-section">
         <div class="card">
           <h2>Календарь</h2>
-          <p>Здесь будет список ближайших событий. Полупрозрачные карточки не перекрывают красоту фона.</p>
-          <p class="status">Статус: ожидает авторизации</p>
+          <p>Функционал календаря требует OAuth-авторизации (Google/Outlook). В демо-режиме доступна только вкладка «Погода».</p>
+          <p class="status">Статус: требуется авторизация</p>
         </div>
       </div>
 
+      <!-- Вкладка ПОЧТА -->
       <div id="mail" class="hidden-section">
         <div class="card">
           <h2>Почта</h2>
-          <p>Здесь будет сводка непрочитанных писем. Эффект размытия (backdrop-filter) делает интерфейс воздушным.</p>
-          <p class="status">Статус: ожидает подключения</p>
+          <p>Функционал почты требует IMAP/OAuth авторизации. В демо-режиме доступна только вкладка «Погода».</p>
+          <p class="status">Статус: требуется авторизация</p>
         </div>
       </div>
     </div>
@@ -185,12 +186,52 @@
       const tg = window.Telegram.WebApp;
       tg.ready();
 
+      // Функция загрузки погоды
+      async function loadWeather() {
+        const statusEl = document.getElementById('weather-status');
+        const contentEl = document.getElementById('weather-content');
+        
+        statusEl.textContent = "Загрузка данных...";
+        
+        try {
+          // Запрос идет на ТВОЙ локальный сервер (FastAPI)
+          // Важно: адрес должен совпадать с тем, куда смотрит ngrok
+          const res = await fetch('/api/weather?city=Moscow'); 
+          
+          if (!res.ok) {
+            throw new Error(`Ошибка сети: \${res.status}`);
+          }
+          
+          const data = await res.json();
+          
+          if (data.error) {
+            contentEl.innerHTML = `<b style="color:red;">Ошибка:</b> \${data.error}`;
+            statusEl.textContent = "Не удалось получить данные";
+            return;
+          }
+          
+          // Форматирование вывода
+          contentEl.innerHTML = `
+            <b>\${data.city}</b><br>
+            Температура: <span style="color:#2481cc; font-weight:bold;">\${data.temp}</span><br>
+            Описание: \${data.desc}
+          `;
+          statusEl.textContent = "Статус: данные загружены";
+          
+        } catch (e) {
+          console.error(e);
+          statusEl.textContent = "Ошибка соединения с сервером";
+          contentEl.innerHTML = "<b>Проверьте:</b> <br>1. Запущен ли uvicorn (server.py)<br>2. Запущен ли ngrok<br>3. Актуальна ли ссылка в BotFather";
+        }
+      }
+
+      // Функция переключения вкладок
       function switchTab(tabName) {
-        // Обновляем кнопки
+        // 1. Обновляем кнопки
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         event.target.classList.add('active');
 
-        // Переключаем секции
+        // 2. Переключаем секции
         document.querySelectorAll('.active-section, .hidden-section').forEach(el => {
           el.classList.remove('active-section');
           el.classList.add('hidden-section');
@@ -198,6 +239,11 @@
 
         document.getElementById(tabName).classList.remove('hidden-section');
         document.getElementById(tabName).classList.add('active-section');
+
+        // 3. Если открыли вкладку "Погода", грузим данные
+        if (tabName === 'weather') {
+          loadWeather();
+        }
       }
     </script>
   </body>
