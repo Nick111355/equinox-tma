@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>Equinox TMA</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--tg-theme-bg-color, #fff);
+        color: var(--tg-theme-text-color, #000);
+        padding: 16px;
+        margin: 0;
+      }
+      h1 { margin-top: 0; }
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--tg-theme-hint-color, #ccc);
+        resize: vertical;
+        box-sizing: border-box;
+        font-size: 16px;
+      }
+      button {
+        width: 100%;
+        padding: 14px;
+        margin-top: 12px;
+        border: none;
+        border-radius: 12px;
+        background-color: var(--tg-theme-button-color, #2481cc);
+        color: var(--tg-theme-button-text-color, #fff);
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .status { margin-top: 12px; font-size: 14px; color: var(--tg-theme-hint-color, #888); }
+    </style>
+  </head>
+  <body>
+    <h1>Equinox: финансы и МСФО</h1>
+    <p>Задай вопрос по учёту, отчётности или МФУ — я помогу.</p>
+    <textarea id="question" placeholder="Например: «Как учесть резерв по IAS 37?»"></textarea>
+    <button id="send">Отправить в бота</button>
+    <div id="status" class="status"></div>
+
+    <script>
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+
+      const btn = document.getElementById('send');
+      const textarea = document.getElementById('question');
+      const status = document.getElementById('status');
+
+      btn.onclick = () => {
+        const q = textarea.value.trim();
+        if (!q) {
+          status.textContent = 'Введи вопрос, пожалуйста.';
+          return;
+        }
+        status.textContent = 'Отправляю...';
+        tg.sendData(q);
+      };
+    </script>
+  </body>
+</html>
